@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'com.vanniktech.maven.publish'
 apply from : '../common.gradle'
 
 android {
@@ -10,25 +11,16 @@ android {
     namespace 'com.hjq.gson.factory'
 
     android.libraryVariants.configureEach { variant ->
-        // aar 输出文件名配置
         variant.outputs.configureEach { output ->
             outputFileName = "${rootProject.name}-${android.defaultConfig.versionName}.aar"
         }
     }
 }
 
-afterEvaluate {
-    // 排除 BuildConfig.class 和 R.class
-    generateReleaseBuildConfig.enabled = false
-    generateDebugBuildConfig.enabled = false
-    generateReleaseResValues.enabled = false
-    generateDebugResValues.enabled = false
-}
-
 dependencies {
     // Json 解析框架：https://github.com/google/gson
     // noinspection GradleDependency
-    implementation 'com.google.code.gson:gson:2.13.1'
+    implementation 'com.google.code.gson:gson:2.9.1'
     // Kotlin 反射依赖：用于反射 Kotlin data class 类对象
     implementation 'org.jetbrains.kotlin:kotlin-reflect:1.5.10'
 }
@@ -42,26 +34,31 @@ tasks.withType(Javadoc).configureEach {
     options.addStringOption('charSet', 'UTF-8')
 }
 
-tasks.register('sourcesJar', Jar) {
-    from android.sourceSets.main.java.srcDirs
-    classifier = 'sources'
-}
+mavenPublishing {
+    coordinates("com.huanli233.gsonfactory", "gsonfactory", "1.0.1")
+    pom {
+        name = 'GsonFactory'
+        description = 'Gson compat'
+        url = 'https://github.com/huanli233/GsonFactoryCompat'
 
-tasks.register('javadoc', Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-    // 排除 Kotlin 相关的类 生成 Java Doc
-    // https://github.com/novoda/bintray-release/issues/71
-    excludes = ['**/*.kt']
-}
+        licenses {
+            license {
+                name = 'The Apache License, Version 2.0'
+                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
 
-tasks.register('javadocJar', Jar) {
-    dependsOn javadoc
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
+        developers {
+            developer {
+                id = 'huanli233'
+                name = 'huanli233'
+            }
+        }
 
-artifacts {
-    archives javadocJar
-    archives sourcesJar
+        scm {
+            connection = 'scm:git:github.com/huanli233/GsonFactoryCompat.git'
+            developerConnection = 'scm:git:ssh://github.com/huanli233/GsonFactoryCompat.git'
+            url = 'https://github.com/huanli233/GsonFactoryCompat/tree/master'
+        }
+    }
 }

@@ -12,6 +12,8 @@ import com.google.gson.internal.UnsafeAllocator;
  */
 public final class ReflectSafeCreatorConstructor<T> implements ObjectConstructor<T> {
 
+    private static final com.hjq.gson.factory.internal.UnsafeAllocator UnsafeAllocatorInstance = com.hjq.gson.factory.internal.UnsafeAllocator.create();
+
     private final ObjectConstructor<T> mKotlinDataClassDefaultValueConstructor;
 
     private final Class<? super T> mRawType;
@@ -31,7 +33,7 @@ public final class ReflectSafeCreatorConstructor<T> implements ObjectConstructor
         }
 
         try {
-            instance = (T) UnsafeAllocator.INSTANCE.newInstance(mRawType);
+            instance = (T) UnsafeAllocatorInstance.newInstance(mRawType);
             return instance;
         } catch (Exception e) {
             throw new RuntimeException(("Unable to create instance of " + mRawType + ". "

@@ -3,7 +3,6 @@ package com.hjq.gson.factory.element;
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.internal.bind.ReflectiveTypeAdapterFactory;
-import com.google.gson.internal.bind.SerializationDelegatingTypeAdapter;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
@@ -12,12 +11,6 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 
-/**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/GsonFactory
- *    time   : 2020/12/08
- *    desc   : Object 解析适配器，参考：{@link com.google.gson.internal.bind.TypeAdapterRuntimeTypeWrapper}
- */
 public class TypeAdapterRuntimeTypeWrapper<T> extends TypeAdapter<T> {
 
     private final Gson mGson;
@@ -72,14 +65,14 @@ public class TypeAdapterRuntimeTypeWrapper<T> extends TypeAdapter<T> {
      */
     private static boolean isReflective(TypeAdapter<?> typeAdapter) {
         // Run this in loop in case multiple delegating adapters are nested
-        while (typeAdapter instanceof SerializationDelegatingTypeAdapter) {
-            TypeAdapter<?> delegate = ((SerializationDelegatingTypeAdapter<?>) typeAdapter).getSerializationDelegate();
-            // Break if adapter does not delegate serialization
-            if (delegate == typeAdapter) {
-                break;
-            }
-            typeAdapter = delegate;
-        }
+//        while (typeAdapter instanceof SerializationDelegatingTypeAdapter) {
+//            TypeAdapter<?> delegate = ((SerializationDelegatingTypeAdapter<?>) typeAdapter).getSerializationDelegate();
+//            // Break if adapter does not delegate serialization
+//            if (delegate == typeAdapter) {
+//                break;
+//            }
+//            typeAdapter = delegate;
+//        }
 
         return typeAdapter instanceof ReflectiveTypeAdapterFactory.Adapter;
     }

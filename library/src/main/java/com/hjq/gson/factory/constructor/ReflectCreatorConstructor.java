@@ -39,17 +39,33 @@ public final class ReflectCreatorConstructor<T> implements ObjectConstructor<T> 
         // Note: InstantiationException should be impossible because check at start of method made sure
         //   that class is not abstract
         catch (InstantiationException e) {
-            throw new RuntimeException("Failed to invoke constructor '" + ReflectionHelper.constructorToString(
+            throw new RuntimeException("Failed to invoke constructor '" + constructorToString(
                 mConstructor) + "'"
                 + " with no args", e);
         } catch (InvocationTargetException e) {
             // don't wrap if cause is unchecked?
             // JsonParseException ?
-            throw new RuntimeException("Failed to invoke constructor '" + ReflectionHelper.constructorToString(
+            throw new RuntimeException("Failed to invoke constructor '" + constructorToString(
                 mConstructor) + "'"
                 + " with no args", e.getCause());
         } catch (IllegalAccessException e) {
             throw ReflectionHelper.createExceptionForUnexpectedIllegalAccess(e);
         }
+    }
+
+    private static String constructorToString(Constructor<?> constructor) {
+        StringBuilder stringBuilder = new StringBuilder(constructor.getDeclaringClass().getName())
+                .append('#')
+                .append(constructor.getDeclaringClass().getSimpleName())
+                .append('(');
+        Class<?>[] parameters = constructor.getParameterTypes();
+        for (int i = 0; i < parameters.length; i++) {
+            if (i > 0) {
+                stringBuilder.append(", ");
+            }
+            stringBuilder.append(parameters[i].getSimpleName());
+        }
+
+        return stringBuilder.append(')').toString();
     }
 }

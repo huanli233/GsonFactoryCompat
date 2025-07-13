@@ -5,10 +5,10 @@ import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
 import com.google.gson.annotations.JsonAdapter;
-import com.google.gson.internal.GsonTypes;
 import com.google.gson.internal.Excluder;
 import com.google.gson.reflect.TypeToken;
 import com.hjq.gson.factory.constructor.MainConstructor;
+import com.hjq.gson.factory.internal.TypeUtils;
 import com.hjq.gson.factory.other.ReflectiveFieldBound;
 import com.hjq.gson.factory.other.ReflectiveTypeUtils;
 import java.lang.reflect.Field;
@@ -95,7 +95,7 @@ public class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
                     continue;
                 }
                 field.setAccessible(true);
-                Type fieldType = GsonTypes.resolve(type.getType(), raw, field.getGenericType());
+                Type fieldType = TypeUtils.resolve(type.getType(), raw, field.getGenericType());
                 List<String> fieldNames = getFieldNames(field);
                 ReflectiveFieldBound previous = null;
                 for (int i = 0; i < fieldNames.size(); ++i) {
@@ -116,7 +116,7 @@ public class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
                             + " declares multiple JSON fields named " + previous.getFieldName());
                 }
             }
-            type = TypeToken.get(GsonTypes.resolve(type.getType(), raw, raw.getGenericSuperclass()));
+            type = TypeToken.get(TypeUtils.resolve(type.getType(), raw, raw.getGenericSuperclass()));
             raw = type.getRawType();
         }
         return result;

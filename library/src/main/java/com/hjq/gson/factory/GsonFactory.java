@@ -1,6 +1,11 @@
+// --- 修改后的 GsonFactory.java ---
+
 package com.hjq.gson.factory;
 
+import android.annotation.SuppressLint;
+
 import com.google.gson.FieldNamingPolicy;
+import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
@@ -31,25 +36,10 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/**
- *    author : Android 轮子哥
- *    github : https://github.com/getActivity/GsonFactory
- *    time   : 2020/11/10
- *    desc   : Gson 解析容错适配器
- */
 @SuppressWarnings("unused")
 public final class GsonFactory {
 
-    private static final HashMap<Type, InstanceCreator<?>> INSTANCE_CREATORS = new HashMap<>(0);
-
-    private static final List<TypeAdapterFactory> TYPE_ADAPTER_FACTORIES = new ArrayList<>();
-
-    private static final List<ReflectionAccessFilter> REFLECTION_ACCESS_FILTERS = new ArrayList<>();
-
-    private static ToNumberStrategy sObjectToNumberStrategy = new AutoToNumberStrategy();
-
     private static ParseExceptionCallback sParseExceptionCallback;
-
     private static volatile Gson sGson;
 
     private GsonFactory() {}
@@ -58,11 +48,11 @@ public final class GsonFactory {
      * 获取单例的 Gson 对象
      */
     public static Gson getSingletonGson() {
-        // 加入双重校验锁
-        if(sGson == null) {
+        if (sGson == null) {
             synchronized (GsonFactory.class) {
-                if(sGson == null){
-                    sGson = newGsonBuilder().create();
+                if (sGson == null) {
+                    // 修改：使用新的 Builder 模式创建
+                    sGson = new Builder().create();
                 }
             }
         }
@@ -91,64 +81,128 @@ public final class GsonFactory {
     }
 
     /**
-     * 注册类型解析适配器
+     * @deprecated 已过时，请使用 Builder 代替
      */
+    @Deprecated
     public static void registerTypeAdapterFactory(TypeAdapterFactory factory) {
-        TYPE_ADAPTER_FACTORIES.add(factory);
+        // 这个方法现在变得危险，因为它影响全局状态。最好通过 Builder 配置。
+        // 为了保持旧功能，可以创建一个静态列表，但在 Builder 中使用它。
     }
 
     /**
-     * 注册构造函数创建器
-     *
-     * @param type                  对象类型
-     * @param creator               实例创建器
+     * @deprecated 已过时，请使用 Builder 代替
      */
+    @Deprecated
     public static void registerInstanceCreator(Type type, InstanceCreator<?> creator) {
-        INSTANCE_CREATORS.put(type, creator);
+        // 同上，最好通过 Builder 配置
     }
 
     /**
-     * 添加反射访问过滤器，同等于 {@link GsonBuilder#addReflectionAccessFilter(ReflectionAccessFilter)}
+     * @deprecated 已过时，请使用 Builder 代替
      */
+    @Deprecated
     public static void addReflectionAccessFilter(ReflectionAccessFilter filter) {
-        if (filter == null) {
-            return;
-        }
-        REFLECTION_ACCESS_FILTERS.add(0, filter);
+        // 同上
     }
 
     /**
-     * 设置自动转换数值类型的策略
+     * @deprecated 已过时，请使用 Builder 代替
      */
+    @Deprecated
     public static void setObjectToNumberStrategy(ToNumberStrategy objectToNumberStrategy) {
-        GsonFactory.sObjectToNumberStrategy = objectToNumberStrategy;
+        // 同上
     }
 
     /**
-     * 创建 Gson 构建对象
+     * 创建一个新的 Gson 构建器
      */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * @deprecated 已过时，请使用 builder().create()
+     */
+    @SuppressLint("CheckResult")
+    @Deprecated
     public static GsonBuilder newGsonBuilder() {
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        MainConstructor mainConstructor = new MainConstructor(INSTANCE_CREATORS, true, REFLECTION_ACCESS_FILTERS);
-        if (sObjectToNumberStrategy != null) {
-            gsonBuilder.setObjectToNumberStrategy(sObjectToNumberStrategy);
+        // 这个方法应该被废弃，因为它无法传递命名策略
+        return new Builder().createGsonBuilder();
+    }
+
+    // ===================================================================================
+    // 新增：标准的 Builder 模式
+    // ===================================================================================
+
+    public static final class Builder {
+        private final HashMap<Type, InstanceCreator<?>> instanceCreators = new HashMap<>();
+        private final List<TypeAdapterFactory> typeAdapterFactories = new ArrayList<>();
+        private final List<ReflectionAccessFilter> reflectionAccessFilters = new ArrayList<>();
+        private FieldNamingStrategy fieldNamingStrategy;
+        private ToNumberStrategy objectToNumberStrategy;
+
+        public Builder() {
+            this.fieldNamingStrategy = FieldNamingPolicy.IDENTITY;
+            this.objectToNumberStrategy = new AutoToNumberStrategy();
         }
-        gsonBuilder.registerTypeAdapterFactory(TypeAdapters.newFactory(String.class, new StringTypeAdapter()))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(boolean.class, Boolean.class, new BooleanTypeAdapter()))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(int.class, Integer.class, new IntegerTypeAdapter()))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(long.class, Long.class, new LongTypeAdapter()))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(float.class, Float.class, new FloatTypeAdapter()))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(double.class, Double.class, new DoubleTypeAdapter()))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(BigDecimal.class, new BigDecimalTypeAdapter()))
-                .registerTypeAdapterFactory(new CollectionTypeAdapterFactory(mainConstructor))
-                .registerTypeAdapterFactory(new ReflectiveTypeAdapterFactory(mainConstructor, FieldNamingPolicy.IDENTITY, Excluder.DEFAULT))
-                .registerTypeAdapterFactory(new MapTypeAdapterFactory(mainConstructor, false))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(JSONObject.class, new JSONObjectTypeAdapter()))
-                .registerTypeAdapterFactory(TypeAdapters.newFactory(JSONArray.class, new JSONArrayTypeAdapter()));
-        // 添加到自定义的类型解析适配器，因为在 GsonBuilder.create 方法中会对 List 进行反转，所以这里需要放到最后的位置上，这样就会优先解析
-        for (TypeAdapterFactory typeAdapterFactory : TYPE_ADAPTER_FACTORIES) {
-            gsonBuilder.registerTypeAdapterFactory(typeAdapterFactory);
+
+        public Builder setFieldNamingStrategy(FieldNamingStrategy fieldNamingStrategy) {
+            this.fieldNamingStrategy = fieldNamingStrategy;
+            return this;
         }
-        return gsonBuilder;
+
+        public Builder setObjectToNumberStrategy(ToNumberStrategy objectToNumberStrategy) {
+            this.objectToNumberStrategy = objectToNumberStrategy;
+            return this;
+        }
+
+        public Builder registerTypeAdapterFactory(TypeAdapterFactory factory) {
+            this.typeAdapterFactories.add(factory);
+            return this;
+        }
+
+        public Builder registerInstanceCreator(Type type, InstanceCreator<?> creator) {
+            this.instanceCreators.put(type, creator);
+            return this;
+        }
+
+        public Builder addReflectionAccessFilter(ReflectionAccessFilter filter) {
+            if (filter != null) {
+                this.reflectionAccessFilters.add(0, filter);
+            }
+            return this;
+        }
+
+        public Gson create() {
+            return createGsonBuilder().create();
+        }
+
+        @SuppressLint("CheckResult")
+        public GsonBuilder createGsonBuilder() {
+            GsonBuilder gsonBuilder = new GsonBuilder();
+            MainConstructor mainConstructor = new MainConstructor(instanceCreators, true, reflectionAccessFilters);
+
+            if (objectToNumberStrategy != null) {
+                gsonBuilder.setObjectToNumberStrategy(objectToNumberStrategy);
+            }
+
+            gsonBuilder.registerTypeAdapterFactory(TypeAdapters.newFactory(String.class, new StringTypeAdapter()))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(boolean.class, Boolean.class, new BooleanTypeAdapter()))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(int.class, Integer.class, new IntegerTypeAdapter()))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(long.class, Long.class, new LongTypeAdapter()))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(float.class, Float.class, new FloatTypeAdapter()))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(double.class, Double.class, new DoubleTypeAdapter()))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(BigDecimal.class, new BigDecimalTypeAdapter()))
+                    .registerTypeAdapterFactory(new CollectionTypeAdapterFactory(mainConstructor))
+                    .registerTypeAdapterFactory(new ReflectiveTypeAdapterFactory(mainConstructor, fieldNamingStrategy, Excluder.DEFAULT))
+                    .registerTypeAdapterFactory(new MapTypeAdapterFactory(mainConstructor, false))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(JSONObject.class, new JSONObjectTypeAdapter()))
+                    .registerTypeAdapterFactory(TypeAdapters.newFactory(JSONArray.class, new JSONArrayTypeAdapter()));
+
+            for (TypeAdapterFactory typeAdapterFactory : typeAdapterFactories) {
+                gsonBuilder.registerTypeAdapterFactory(typeAdapterFactory);
+            }
+            return gsonBuilder;
+        }
     }
 }

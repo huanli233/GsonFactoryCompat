@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,7 +40,9 @@ public final class JsonUnitTest {
     @Before
     public void onTestBefore() {
         // CrashReport.initCrashReport(InstrumentationRegistry.getInstrumentation().getContext());
-        mGson = GsonFactory.getSingletonGson();
+        mGson = GsonFactory.newGsonBuilder()
+                .setFieldNamingStrategy(FieldNamingStrategy.INSTANCE)
+                .create();
         // 设置 Json 解析容错监听
         GsonFactory.setParseExceptionCallback(new ParseExceptionCallback() {
 
@@ -103,6 +106,13 @@ public final class JsonUnitTest {
     public void kotlinDataClassDefaultValueTest() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         String json = getAssetsString(context, "NullJson.json");
+        DataClassBean dataClassBean = mGson.fromJson(json, DataClassBean.class);
+        Log.i(TAG, mGson.toJson(dataClassBean));
+    }
+
+    @Test
+    public void customTest() {
+        String json = "{\"userDesc\":\"321\"}";
         DataClassBean dataClassBean = mGson.fromJson(json, DataClassBean.class);
         Log.i(TAG, mGson.toJson(dataClassBean));
     }
